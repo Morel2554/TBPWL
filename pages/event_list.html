@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daftar Event - Universitas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 py-10">
+  <header class="bg-blue-700 text-white py-4 shadow">
+    <div class="container mx-auto flex justify-between items-center px-6">
+      <h1 class="text-2xl font-bold">
+        <a href="index.html" class="hover:underline">Event UNI</a>
+      </h1>
+      <nav class="space-x-4" id="nav-links">
+        <!-- JS akan ganti ini -->
+      </nav>
+    </div>
+  </header>
+
+  <div class="max-w-5xl mx-auto px-4">
+    <h1 class="text-3xl font-bold mb-6 text-center">Daftar Event</h1>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="eventContainer">
+      <!-- Event dinamis akan muncul di sini -->
+    </div>
+  </div>
+
+  <script>
+    // Navbar dinamis
+    fetch('/session')
+      .then(res => res.json())
+      .then(data => {
+        const nav = document.getElementById('nav-links');
+        if (data.user) {
+          nav.innerHTML = `
+            <span class="mr-4">Hai, <strong>${data.user.username}</strong></span>
+            <a href="histori.html" class="hover:underline">Histori</a>
+            <a href="profile.html" class="hover:underline">Profil</a>
+            <button onclick="logout()" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Logout</button>
+          `;
+        } else {
+          nav.innerHTML = `
+            <a href="login.html" class="hover:underline">Login</a>
+            <a href="register.html" class="hover:underline">Daftar</a>
+          `;
+        }
+      });
+
+    function logout() {
+      fetch('/logout', { method: 'POST' })
+        .then(() => location.href = 'index.html');
+    }
+
+    // Event dinamis
+    fetch('/api/events')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('eventContainer');
+        if (data.length === 0) {
+          container.innerHTML = `<p class="text-center text-gray-500 col-span-full">Belum ada event tersedia.</p>`;
+          return;
+        }
+
+        container.innerHTML = data.map(ev => `
+          <div class="bg-white p-5 rounded-lg shadow">
+            <img src="${ev.poster || 'default_poster.jpg'}" alt="Poster" class="mb-4 rounded">
+            <h2 class="text-xl font-semibold mb-2">${ev.nama}</h2>
+            <p class="text-sm text-gray-500 mb-1">Tanggal: ${ev.tanggal}</p>
+            <p class="text-sm text-gray-500 mb-1">Waktu: ${ev.waktu}</p>
+            <p class="text-sm text-gray-500 mb-1">Lokasi: ${ev.lokasi}</p>
+            <p class="text-sm text-gray-700 mb-2">Biaya: Rp ${parseInt(ev.biaya).toLocaleString()}</p>
+            <a href="detail_event.html?id=${ev.id}" class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Lihat Detail</a>
+          </div>
+        `).join('');
+      })
+      .catch(err => {
+        console.error('Error load event:', err);
+        document.getElementById('eventContainer').innerHTML = `<p class="text-center text-red-500 col-span-full">Gagal memuat event.</p>`;
+      });
+  </script>
+</body>
+</html>

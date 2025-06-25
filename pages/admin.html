@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin - Kelola Tim</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 py-10">
+  <header class="bg-blue-700 text-white py-4 shadow">
+    <div class="container mx-auto flex justify-between items-center px-6">
+      <h1 class="text-2xl font-bold">
+        <a href="index.html" class="hover:underline">Event UNI</a>
+      </h1>
+      <nav class="space-x-4" id="nav-links"></nav>
+    </div>
+  </header>
+
+  <div class="max-w-5xl mx-auto bg-white p-6 rounded shadow mt-6">
+    <h2 class="text-2xl font-bold mb-4">Tim Keuangan</h2>
+    <table class="w-full table-auto border mb-6" id="keuanganTable"></table>
+
+    <form id="formKeuangan" class="mb-10">
+      <h3 class="font-semibold mb-2">Tambah Akun Keuangan</h3>
+      <input type="text" name="name" placeholder="Nama" required class="border px-2 py-1 mr-2">
+      <input type="text" name="username" placeholder="Username" required class="border px-2 py-1 mr-2">
+      <input type="email" name="email" placeholder="Email" required class="border px-2 py-1 mr-2">
+      <input type="password" name="password" placeholder="Password" required class="border px-2 py-1 mr-2">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Tambah</button>
+    </form>
+
+    <h2 class="text-2xl font-bold mb-4">Panitia</h2>
+    <table class="w-full table-auto border mb-6" id="panitiaTable"></table>
+
+    <form id="formPanitia">
+      <h3 class="font-semibold mb-2">Tambah Akun Panitia</h3>
+      <input type="text" name="name" placeholder="Nama" required class="border px-2 py-1 mr-2">
+      <input type="text" name="username" placeholder="Username" required class="border px-2 py-1 mr-2">
+      <input type="email" name="email" placeholder="Email" required class="border px-2 py-1 mr-2">
+      <input type="password" name="password" placeholder="Password" required class="border px-2 py-1 mr-2">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Tambah</button>
+    </form>
+  </div>
+
+  <script>
+    // Cek role admin
+    fetch('/session')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.user || data.user.role !== 'administrator') {
+          alert('Kamu bukan admin, tidak boleh akses halaman ini');
+          window.location.href = '/';
+        }
+      });
+
+    // Navbar
+    fetch('/session')
+      .then(res => res.json())
+      .then(data => {
+        const nav = document.getElementById('nav-links');
+        if (data.user) {
+          nav.innerHTML = `
+            <span class="mr-4">Hai, <strong>${data.user.username}</strong></span>
+            <a href="histori.html" class="hover:underline">Histori</a>
+            <a href="profil.html" class="hover:underline">Profil</a>
+            <button onclick="logout()" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Logout</button>
+          `;
+        }
+      });
+
+    function logout() {
+      fetch('/logout', { method: 'POST' })
+        .then(() => location.href = 'index.html');
+    }
+
+    // Ambil data
+    fetch('/api/keuangan')
+      .then(res => res.json())
+      .then(data => renderTable('keuanganTable', data, 'keuangan'));
+
+    fetch('/api/panitia')
+      .then(res => res.json())
+      .then(data => renderTable('panitiaTable', data, 'panitia'));
+
+    function renderTable(id, data, type) {
+      const table = document.getElementById(id);
+      table.innerHTML = `
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="border px-4 py-2">Nama</th>
+            <th class="border px-4 py-2">Username</th>
+            <th class="border px-4 py-2">Email</th>
+            <th class="border px-4 py-2">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(u => `
+            <tr>
+              <td class="border px-4 py-2">${u.name}</td>
+              <td class="border px-4 py-2">${u.username}</td>
+              <td class="border px-4 py-2">${u.email}</td>
+              <td class="border px-4 py-2 text-center">
+                <button onclick="deleteUser(${u.id})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Hapus Akun</button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      `;
+    }
+
+    function deleteUser(id) {
+      if (confirm('Yakin ingin menghapus akun ini?')) {
+        fetch('/api/delete-user', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        }).then(() => location.reload());
+      }
+    }
+
+    // Tambah user baru
+    document.getElementById('formKeuangan').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const data = Object.fromEntries(form.entries());
+      data.role_id = 4;
+      fetch('/api/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(() => location.reload());
+    });
+
+    document.getElementById('formPanitia').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const data = Object.fromEntries(form.entries());
+      data.role_id = 5;
+      fetch('/api/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(() => location.reload());
+    });
+  </script>
+</body>
+</html>

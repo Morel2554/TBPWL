@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Halaman Panitia</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Navbar -->
+  <header class="bg-blue-700 text-white py-4 shadow">
+    <div class="container mx-auto flex justify-between items-center px-6">
+      <h1 class="text-xl font-bold"><a href="index.html">Event UNI</a></h1>
+      <div id="nav-links" class="space-x-4"></div>
+    </div>
+  </header>
+
+  <!-- Konten -->
+  <main class="container mx-auto p-6">
+    <h2 class="text-2xl font-bold mb-4">Kelola Event</h2>
+
+    <!-- Tabel Event -->
+    <table class="w-full table-auto border text-left mb-8" id="eventTable">
+      <thead>
+        <tr class="bg-gray-200">
+          <th class="border px-2 py-1">Nama</th>
+          <th class="border px-2 py-1">Tanggal</th>
+          <th class="border px-2 py-1">Waktu</th>
+          <th class="border px-2 py-1">Lokasi</th>
+          <th class="border px-2 py-1">Narasumber</th>
+          <th class="border px-2 py-1">Biaya</th>
+          <th class="border px-2 py-1">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="eventBody"></tbody>
+    </table>
+
+    <!-- Form Tambah/Edit Event -->
+    <h2 class="text-xl font-semibold mb-2">Tambah / Edit Event</h2>
+    <form id="eventForm" class="space-y-4 bg-white p-4 rounded shadow max-w-xl">
+      <input type="hidden" id="eventId" name="id">
+      <input type="text" id="nama" name="nama" placeholder="Nama Event" required class="w-full border px-3 py-2" />
+      <input type="date" id="tanggal" name="tanggal" required class="w-full border px-3 py-2" />
+      <input type="time" id="waktu" name="waktu" required class="w-full border px-3 py-2" />
+      <input type="text" id="lokasi" name="lokasi" placeholder="Lokasi" required class="w-full border px-3 py-2" />
+      <input type="text" id="narasumber" name="narasumber" placeholder="Narasumber" required class="w-full border px-3 py-2" />
+      <input type="text" id="poster" name="poster" placeholder="Nama file poster (opsional)" class="w-full border px-3 py-2" />
+      <input type="number" id="biaya" name="biaya" placeholder="Biaya" required class="w-full border px-3 py-2" />
+      <input type="number" id="maksimal_peserta" name="maksimal_peserta" placeholder="Maksimal Peserta" required class="w-full border px-3 py-2" />
+      <button id="submitBtn" type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tambah</button>
+    </form>
+  </main>
+
+  <script>
+    // Proteksi role panitia
+    fetch('/session')
+      .then(res => res.json())
+      .then(data => {
+        const nav = document.getElementById('nav-links');
+        if (!data.user || data.user.role !== 'panitia') {
+          alert('Kamu bukan panitia!');
+          window.location.href = '/';
+        } else {
+          nav.innerHTML = `
+            <span class="mr-4">Hai, ${data.user.username} (${data.user.role})</span>
+            <a href="profil.html" class="hover:underline">Profil</a>
+            <button onclick="logout()" class="bg-red-500 px-3 py-1 rounded text-white hover:bg-red-600">Logout</button>
+          `;
+          loadEvents();
+        }
+      });
+
+    function logout() {
+      fetch('/logout', { method: 'POST' })
+        .then(() => location.href = 'index.html');
+    }
+
+    // Ambil daftar event
+    function loadEvents() {
+      fetch('/api/events')
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById('eventBody');
+          tbody.innerHTML = '';
+          data.forEach(event => {
+            tbody.innerHTML += `
+              <tr>
+                <td class="border px-2 py-1">${event.nama}</td>
+                <td class="border px-2 py-1">${event.tanggal}</td>
+                <td class="border px-2 py-1">${event.waktu}</td>
+                <td class="border px-2 py-1">${event.lokasi}</td>
+                <td class="border px-2 py-1">${event.narasumber}</td>
+                <td class="border px-2 py-1">${event.biaya}</td>
+                <td class="border px-2 py-1 space-x-2">
+                  <button onclick="hapusEvent(${event.id})" class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Hapus</button>
+                  <button onclick="editEvent(${event.id})" class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">Edit</button>
+                </td>
+              </tr>
+            `;
+          });
+        });
+    }
+
+    function hapusEvent(id) {
+      if (!confirm('Yakin ingin menghapus event ini?')) return;
+      fetch(`/api/events/${id}`, { method: 'DELETE' })
+        .then(() => loadEvents())
+        .catch(err => alert('Gagal hapus event'));
+    }
+
+    function editEvent(id) {
+      fetch(`/api/events/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('eventId').value = data.id;
+          document.getElementById('nama').value = data.nama;
+          document.getElementById('tanggal').value = data.tanggal;
+          document.getElementById('waktu').value = data.waktu;
+          document.getElementById('lokasi').value = data.lokasi;
+          document.getElementById('narasumber').value = data.narasumber;
+          document.getElementById('poster').value = data.poster || '';
+          document.getElementById('biaya').value = data.biaya;
+          document.getElementById('maksimal_peserta').value = data.maksimal_peserta;
+          document.getElementById('submitBtn').innerText = 'Update';
+        });
+    }
+
+    // Form tambah / update event
+    document.getElementById('eventForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const jsonData = {};
+      formData.forEach((value, key) => jsonData[key] = value);
+
+      const id = document.getElementById('eventId').value;
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/api/events/${id}` : '/api/events';
+
+      fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(jsonData)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Gagal simpan event');
+        return res.text();
+      })
+      .then(msg => {
+        alert(msg);
+        this.reset();
+        document.getElementById('submitBtn').innerText = 'Tambah';
+        loadEvents();
+      })
+      .catch(err => {
+        alert('Gagal menyimpan event');
+        console.error(err);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Detail Event</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 py-10">
+  <!-- Navbar -->
+  <header class="bg-blue-700 text-white py-4 shadow mb-6">
+    <div class="container mx-auto flex justify-between items-center px-6">
+      <h1 class="text-2xl font-bold">
+        <a href="index.html" class="hover:underline">Event UNI</a>
+      </h1>
+      <nav class="space-x-4" id="nav-links">
+        <!-- Isi oleh JS -->
+      </nav>
+    </div>
+  </header>
+
+  <!-- Konten -->
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded shadow">
+    <h1 class="text-3xl font-bold mb-4" id="eventName">Detail Event</h1>
+    <img id="eventPoster" src="default_poster.jpg" alt="Poster" class="rounded mb-4">
+    <p><strong>Tanggal:</strong> <span id="eventDate"></span></p>
+    <p><strong>Waktu:</strong> <span id="eventTime"></span></p>
+    <p><strong>Lokasi:</strong> <span id="eventLocation"></span></p>
+    <p><strong>Narasumber:</strong> <span id="eventSpeaker"></span></p>
+    <p><strong>Biaya:</strong> Rp <span id="eventFee"></span></p>
+    <p><strong>Maksimal Peserta:</strong> <span id="eventQuota"></span></p>
+
+    <div class="mt-6" id="registerSection">
+      <button id="registerBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Daftar Event</button>
+      <p id="msg" class="mt-2 text-sm text-green-600 hidden"></p>
+      <div id="qrContainer" class="mt-4 hidden">
+        <p class="mb-2 text-sm text-gray-700">Silakan scan QR berikut untuk konfirmasi pembayaran:</p>
+        <img id="qrImage" src="" alt="QR Code" class="w-48 h-48">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Navbar dinamis
+    fetch('/session')
+      .then(res => res.json())
+      .then(data => {
+        const nav = document.getElementById('nav-links');
+        if (data.user) {
+          nav.innerHTML = `
+            <span class="mr-4">Hai, <strong>${data.user.username}</strong></span>
+            <a href="profile.html" class="hover:underline">Profil</a>
+            <button onclick="logout()" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Logout</button>
+          `;
+        } else {
+          nav.innerHTML = `
+            <a href="login.html" class="hover:underline">Login</a>
+            <a href="register.html" class="hover:underline">Daftar</a>
+          `;
+        }
+      });
+
+    function logout() {
+      fetch('/logout', { method: 'POST' })
+        .then(() => location.href = 'index.html');
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const eventId = params.get('id');
+
+    fetch(`/api/events/${eventId}`)
+      .then(res => res.json())
+      .then(ev => {
+        document.getElementById('eventName').textContent = ev.nama;
+        document.getElementById('eventPoster').src = ev.poster || 'default_poster.jpg';
+        document.getElementById('eventDate').textContent = ev.tanggal;
+        document.getElementById('eventTime').textContent = ev.waktu;
+        document.getElementById('eventLocation').textContent = ev.lokasi;
+        document.getElementById('eventSpeaker').textContent = ev.narasumber || '-';
+        document.getElementById('eventFee').textContent = parseInt(ev.biaya).toLocaleString();
+        document.getElementById('eventQuota').textContent = ev.maksimal_peserta || '-';
+      });
+
+    document.getElementById('registerBtn').addEventListener('click', () => {
+      fetch('/api/register-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_id: eventId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const msg = document.getElementById('msg');
+        msg.textContent = data.message;
+        msg.classList.remove('hidden');
+
+        if (data.qr_url) {
+          const qrContainer = document.getElementById('qrContainer');
+          const qrImage = document.getElementById('qrImage');
+          qrImage.src = data.qr_url;
+          qrContainer.classList.remove('hidden');
+        }
+      })
+      .catch(err => {
+        console.error('Gagal daftar:', err);
+      });
+    });
+  </script>
+</body>
+</html>

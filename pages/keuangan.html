@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Halaman Keuangan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Navbar -->
+  <header class="bg-blue-700 text-white py-4 shadow">
+    <div class="container mx-auto flex justify-between items-center px-6">
+      <h1 class="text-xl font-bold"><a href="index.html">Event UNI</a></h1>
+      <div id="nav-links" class="space-x-4"></div>
+    </div>
+  </header>
+
+  <!-- Konten -->
+  <main class="container mx-auto p-6">
+    <h2 class="text-2xl font-bold mb-4">Daftar Member & Event yang Didaftarkan</h2>
+
+    <table class="w-full table-auto border text-left mb-8">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="border px-3 py-2">Nama Member</th>
+          <th class="border px-3 py-2">Email</th>
+          <th class="border px-3 py-2">Event</th>
+          <th class="border px-3 py-2">Status Pembayaran</th>
+        </tr>
+      </thead>
+      <tbody id="daftarBody"></tbody>
+    </table>
+  </main>
+
+  <script>
+    // Proteksi role keuangan
+    fetch('/session')
+      .then(res => res.json())
+      .then(data => {
+        const nav = document.getElementById('nav-links');
+        if (!data.user || data.user.role !== 'tim_keuangan') {
+          alert('Kamu bukan tim keuangan!');
+          window.location.href = '/';
+        } else {
+          nav.innerHTML = `
+            <span class="mr-4">Halo, ${data.user.username} (${data.user.role})</span>
+            <a href="profil.html" class="hover:underline">Profil</a>
+            <button onclick="logout()" class="bg-red-500 px-3 py-1 rounded text-white hover:bg-red-600">Logout</button>
+          `;
+          loadData();
+        }
+      });
+
+    function logout() {
+      fetch('/logout', { method: 'POST' })
+        .then(() => location.href = 'index.html');
+    }
+
+    function loadData() {
+      fetch('/api/daftar-member')
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById('daftarBody');
+          tbody.innerHTML = '';
+          data.forEach(row => {
+            tbody.innerHTML += `
+              <tr>
+                <td class="border px-3 py-2">${row.member_name}</td>
+                <td class="border px-3 py-2">${row.member_email}</td>
+                <td class="border px-3 py-2">${row.event_name}</td>
+                <td class="border px-3 py-2">${row.status}</td>
+              </tr>
+            `;
+          });
+        });
+    }
+  </script>
+</body>
+</html>

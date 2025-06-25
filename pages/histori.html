@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Histori Pendaftaran Event</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 py-10">
+
+  <!-- Navbar -->
+  <header class="bg-blue-700 text-white py-4 shadow mb-6">
+    <div class="container mx-auto flex justify-between items-center px-6">
+      <h1 class="text-2xl font-bold">
+        <a href="index.html" class="hover:underline">Event UNI</a>
+      </h1>
+      <nav class="space-x-4" id="nav-links">
+        <!-- Akan diisi oleh JS -->
+      </nav>
+    </div>
+  </header>
+
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded shadow">
+    <h2 class="text-2xl font-bold mb-4">Histori Pendaftaran Event</h2>
+    <div id="historiContainer" class="space-y-4">
+      <!-- Data histori dinamis akan muncul di sini -->
+    </div>
+  </div>
+
+  <script>
+    // Navbar dinamis
+    fetch('/session')
+      .then(res => res.json())
+      .then(data => {
+        const nav = document.getElementById('nav-links');
+        if (data.user) {
+          nav.innerHTML = `
+            <a href="index.html" class="hover:underline">Beranda</a>
+            <a href="histori.html" class="hover:underline">Histori</a>
+            <a href="profile.html" class="hover:underline">Profil</a>
+            <button onclick="logout()" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Logout</button>
+          `;
+        } else {
+          nav.innerHTML = `
+            <a href="index.html" class="hover:underline">Beranda</a>
+            <a href="login.html" class="hover:underline">Login</a>
+            <a href="register.html" class="hover:underline">Daftar</a>
+          `;
+        }
+      });
+
+    function logout() {
+      fetch('/logout', { method: 'POST' })
+        .then(() => location.href = 'index.html');
+    }
+
+    // Load histori
+    fetch('/api/histori')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('historiContainer');
+        if (data.length === 0) {
+          container.innerHTML = `<p class="text-gray-500">Belum ada pendaftaran event.</p>`;
+          return;
+        }
+
+        container.innerHTML = data.map(reg => `
+          <div class="border p-4 rounded shadow-sm">
+            <h3 class="font-semibold text-lg">${reg.nama}</h3>
+            <p class="text-sm text-gray-600">Tanggal: ${reg.tanggal} | Waktu: ${reg.waktu}</p>
+            <p class="text-sm text-gray-600">Lokasi: ${reg.lokasi}</p>
+            <p class="text-sm">Status Pembayaran: <span class="font-semibold">${reg.status_pembayaran}</span></p>
+            ${reg.registrasi_ulang_qrcode ? `
+              <img src="${reg.registrasi_ulang_qrcode}" alt="QR Registrasi Ulang" class="w-32 mt-2">
+              <p class="text-xs text-gray-500">Scan QR ini saat hadir</p>
+            ` : ''}
+          </div>
+        `).join('');
+      })
+      .catch(err => {
+        console.error('Error load histori:', err);
+        document.getElementById('historiContainer').innerHTML = `<p class="text-red-500">Gagal memuat histori.</p>`;
+      });
+  </script>
+</body>
+</html>

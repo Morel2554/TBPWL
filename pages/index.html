@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Event Universitas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <header class="bg-blue-700 text-white py-4 shadow">
+    <div class="container mx-auto flex justify-between items-center px-6">
+      <h1 class="text-xl font-bold">Event Universitas</h1>
+      <div id="authSection" class="space-x-4">
+        <!-- Diisi lewat JavaScript -->
+      </div>
+    </div>
+  </header>
+
+  <main class="container mx-auto py-8 px-6 text-center">
+    <h2 class="text-3xl font-bold mb-4">Selamat Datang di Portal Event Universitas</h2>
+    <p class="mb-6 text-gray-700">Lihat dan daftar event kampus dengan mudah!</p>
+    <a href="event_list.html" class="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700">
+      Lihat Daftar Event
+    </a>
+  </main>
+
+  <script>
+    fetch('/session')
+      .then(res => res.json())
+      .then(data => {
+        const authSection = document.getElementById('authSection');
+        authSection.innerHTML = '';
+
+        if (data.user) {
+          const user = data.user;
+          authSection.innerHTML += `<span class="mr-4">Halo, ${user.name} (${user.role})</span>`;
+          authSection.innerHTML += `<a href="profil.html" class="hover:underline">Profil</a>`;
+
+          // Role-based navigation
+          if (user.role === 'tim_keuangan') {
+            authSection.innerHTML += `<a href="keuangan.html" class="ml-4 hover:underline">Kelola Keuangan</a>`;
+          } else if (user.role === 'administrator') {
+            authSection.innerHTML += `<a href="admin.html" class="ml-4 hover:underline">Data Panitia</a>`;
+          } else if (user.role === 'panitia') {
+            authSection.innerHTML += `<a href="panitia.html" class="ml-4 hover:underline">Kelola Event</a>`;
+          }
+
+          authSection.innerHTML += `
+            <form method="POST" action="/logout" class="inline ml-4">
+              <button class="hover:underline text-red-200" type="submit">Logout</button>
+            </form>
+          `;
+        } else {
+          authSection.innerHTML = `
+            <a href="login.html" class="hover:underline">Login</a>
+            <a href="register.html" class="hover:underline ml-4">Daftar</a>
+          `;
+        }
+      });
+
+    // Jika member, tampilkan sertifikat
+    fetch('/session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.user && data.user.role_id === 2) {
+          fetch('/api/certificates')
+            .then(res => res.json())
+            .then(certs => {
+              const certSection = document.createElement('div');
+              certSection.className = 'max-w-5xl mx-auto px-4 mt-8';
+              certSection.innerHTML = '<h2 class="text-2xl font-bold mb-4">Sertifikat Anda</h2>';
+
+              if (certs.length === 0) {
+                certSection.innerHTML += '<p class="text-gray-600">Belum ada sertifikat tersedia.</p>';
+              } else {
+                certSection.innerHTML += certs.map(c => `
+                  <div class="mb-2 flex items-center space-x-4">
+                    <span>${c.nama}</span>
+                    <a href="sample_certificate.pdf" download="Sertifikat_${c.hadir_id}.pdf"
+                       class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
+                      Download Sertifikat
+                    </a>
+                  </div>
+                `).join('');
+              }
+              document.body.appendChild(certSection);
+            });
+        }
+      });
+  </script>
+</body>
+</html>
